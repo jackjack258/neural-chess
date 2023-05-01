@@ -9,7 +9,6 @@ import time
 from functools import lru_cache
 
 
-
 def fen_to_onehot(board):
     piece_map = {'P': 0, 'N': 1, 'B': 2, 'R': 3, 'Q': 4, 'K': 5,
                  'p': 6, 'n': 7, 'b': 8, 'r': 9, 'q': 10, 'k': 11}
@@ -29,11 +28,13 @@ def fen_to_onehot(board):
     attacked_bitboard = np.zeros((8, 8), dtype=np.float32)
     attacking_bitboard = np.zeros((8, 8), dtype=np.float32)
     for square in chess.SQUARES:
-        if board.is_attacked_by(chess.WHITE, square) and board.piece_at(square) != None and board.piece_at(square).color==chess.BLACK:
+        if board.is_attacked_by(chess.WHITE, square) and board.piece_at(square) != None and board.piece_at(
+                square).color == chess.BLACK:
             row, col = chess.square_rank(square), chess.square_file(square)
             attacked_bitboard[row][col] = 1
 
-        if board.is_attacked_by(chess.BLACK, square) and board.piece_at(square) != None and board.piece_at(square).color==chess.WHITE:
+        if board.is_attacked_by(chess.BLACK, square) and board.piece_at(square) != None and board.piece_at(
+                square).color == chess.WHITE:
             row, col = chess.square_rank(square), chess.square_file(square)
             attacking_bitboard[row][col] = 1
 
@@ -43,8 +44,6 @@ def fen_to_onehot(board):
     one_hot_tensor = tf.convert_to_tensor(board_array)
     one_hot_tensor = tf.expand_dims(one_hot_tensor, axis=0)
     return one_hot_tensor
-
-
 
 
 def alpha_beta(board, depth, alpha, beta, maximizing_player, transposition_table):
@@ -72,18 +71,15 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player, transposition_table
         max_eval = -np.inf
         best_move = None
 
-
-
         legal_moves = list(chess.LegalMoveGenerator(board))
-        
-        legal_moves.sort(key=lambda move: heuristic(board, move))
 
+        legal_moves.sort(key=lambda move: heuristic(board, move))
 
         for move in legal_moves:
             board.push(move)
             nodes_visited += 1
-            tuple = alpha_beta(board, depth-1, alpha, beta, False, transposition_table)
-            eval=tuple[0]
+            tuple = alpha_beta(board, depth - 1, alpha, beta, False, transposition_table)
+            eval = tuple[0]
             board.pop()
             if eval > max_eval:
                 max_eval = eval
@@ -91,10 +87,6 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player, transposition_table
             alpha = max(alpha, eval)
             if alpha >= beta:
                 break
-
-
-
-
 
         # Update transposition table
         if transposition_table is not None:
@@ -104,7 +96,8 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player, transposition_table
                 entry_type = "lower_bound"
             else:
                 entry_type = "exact"
-            transposition_table[chess.polyglot.zobrist_hash(board)] = {"type": entry_type, "value": max_eval, "depth": depth, "best_move": best_move}
+            transposition_table[chess.polyglot.zobrist_hash(board)] = {"type": entry_type, "value": max_eval,
+                                                                       "depth": depth, "best_move": best_move}
 
         result = max_eval, best_move
 
@@ -117,7 +110,7 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player, transposition_table
         for move in legal_moves:
             board.push(move)
             nodes_visited += 1
-            eval = alpha_beta(board, depth-1, alpha, beta, True, transposition_table)[0]
+            eval = alpha_beta(board, depth - 1, alpha, beta, True, transposition_table)[0]
             board.pop()
             if eval < min_eval:
                 min_eval = eval
@@ -134,27 +127,28 @@ def alpha_beta(board, depth, alpha, beta, maximizing_player, transposition_table
                 entry_type = "lower_bound"
             else:
                 entry_type = "exact"
-            transposition_table[chess.polyglot.zobrist_hash(board)] = {"type": entry_type, "value": min_eval, "depth": depth, "best_move": best_move}
+            transposition_table[chess.polyglot.zobrist_hash(board)] = {"type": entry_type, "value": min_eval,
+                                                                       "depth": depth, "best_move": best_move}
 
         result = min_eval, best_move,
 
     return result
 
 
-
-
 eval_counter = 0
+
+
 def evaluate(board):
     global eval_counter
     eval_counter += 1
     if board.is_checkmate():
         winner = board.outcome().winner
-        if winner==chess.WHITE:
+        if winner == chess.WHITE:
             return 1000.0
-        elif winner==chess.BLACK:
+        elif winner == chess.BLACK:
             return -1000.0
     else:
-    
+
         tensor = fen_to_onehot(board)
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
@@ -162,9 +156,7 @@ def evaluate(board):
         interpreter.invoke()
         eval = interpreter.get_tensor(output_details[0]['index'])
 
-
         return eval
-
 
 
 def heuristic(board, move):
@@ -181,13 +173,12 @@ def heuristic(board, move):
     return score
 
 
-#def alpha_beta_player(board):
+# def alpha_beta_player(board):
 #   return alpha_beta(board, depth=3, alpha=-np.inf, beta=np.inf, maximizing_player=True)[1]
 
 
-
 engine = chess.engine
-#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -200,16 +191,17 @@ with open('model.tflite', 'wb') as f:
 interpreter = tf.lite.Interpreter(model_path="model.tflite")
 interpreter.allocate_tensors()
 
-nodes_visited=0
+nodes_visited = 0
 human_color = input("Do you want to play as white or black? Type 'w' for white or 'b' for black: ")
 
 # Initialize the board and set the player to move
-#fen = '3N4/KPP1p3/3k4/4R3/3P4/6R1/7B/8 w - - 1 1'
-#board = chess.Board(fen)
+# fen = '3N4/KPP1p3/3k4/4R3/3P4/6R1/7B/8 w - - 1 1'
+# board = chess.Board(fen)
 board = chess.Board()
 player = chess.WHITE if human_color == 'w' else chess.BLACK
 pmax = False if player == chess.WHITE else True
 depth = 0
+
 
 # Define the function that handles a human player's move
 def handle_human_move():
@@ -228,11 +220,13 @@ def handle_human_move():
         except ValueError:
             print("Invalid input, try again.")
 
+
 # Define the function that handles alphabetasearch's move
 def handle_ai_move(depth):
     start = time.time()
     # Call the alpha_beta function to find the best move
-    best_move = alpha_beta(board, depth=depth, alpha=-np.inf, beta=np.inf, maximizing_player=pmax, transposition_table={})[1]
+    best_move = \
+    alpha_beta(board, depth=depth, alpha=-np.inf, beta=np.inf, maximizing_player=pmax, transposition_table={})[1]
     # Make the move on the board
     end = time.time()
     duration = end - start
@@ -241,8 +235,8 @@ def handle_ai_move(depth):
     print('Best move:', best_move)
     print('Nodes Visited:', nodes_visited)
     print("current eval: ", evaluate(board))
-    print("time taken: ",duration)
-    print("nodes/second: ",(float(nodes_visited)/duration))
+    print("time taken: ", duration)
+    print("nodes/second: ", (float(nodes_visited) / duration))
 
 
 # Loop until the game is over
@@ -252,12 +246,12 @@ while not board.is_game_over():
     # Handle the current player's move
     if board.turn == player:
         handle_human_move()
-        nodes_visited=0
+        nodes_visited = 0
     else:
         depth = int(input("Enter depth for ai move: "))
-        #depth = 3
+        # depth = 3
         handle_ai_move(depth)
-        nodes_visited=0
+        nodes_visited = 0
 
 # Print the final board and the game result
 print('\n' + str(board))
